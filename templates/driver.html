@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Truck | Partner Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='driver.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
+
+    <!-- PROFESSIONAL TOAST SYSTEM -->
+    <div id="toast-container"
+        style="position: fixed; top: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;">
+    </div>
+
+
+
+    <!-- DASHBOARD LAYOUT -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <header class="mobile-header">
+        <div class="brand">
+            <i class="fas fa-truck-fast"></i> SMART TRUCK
+        </div>
+        <button class="mobile-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <!-- LANGUAGE TOGGLE (Driver Dashboard only) -->
+    <div class="lang-toggle-wrap" style="position: fixed; top: 90px; right: 20px; z-index: 1001; display: block;">
+        <div
+            style="display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:14px; background: rgba(255,255,255,0.9); border: 1px solid var(--border);">
+            <span style="font-weight:900; color: var(--secondary); font-size: 0.85rem;">Language</span>
+            <button type="button" id="lang-en-btn"
+                style="cursor:pointer; border:none; background: transparent; font-weight:900; color: var(--primary);">English</button>
+            <span style="width:1px; height:18px; background: var(--border);"></span>
+            <button type="button" id="lang-ur-btn"
+                style="cursor:pointer; border:none; background: transparent; font-weight:900; color: #64748b;">اردو</button>
+        </div>
+    </div>
+
+
+    <div class="dashboard-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <i class="fas fa-truck-fast"></i> SMART TRUCK
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-loads" onclick="showPage('loads')">
+                    <i class="fas fa-route"></i> <span>Available Loads</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-active"
+                    onclick="showPage('active'); loadActiveJob();">
+                    <i class="fas fa-map-marker-alt"></i> <span>Active Route</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-messages"
+                    onclick="showPage('messages'); loadAllChats();">
+                    <i class="fas fa-comment-dots"></i> <span>Messages</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-earnings" onclick="showPage('earnings')">
+                    <i class="fas fa-wallet"></i> <span>Earnings</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-docs" onclick="showPage('docs')">
+                    <i class="fas fa-file-shield"></i> <span>Verification</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-settings"
+                    onclick="showPage('settings'); loadSettings();">
+                    <i class="fas fa-cog"></i> <span>Settings</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-hq" onclick="showPage('hq'); loadHQChat();">
+                    <i class="fas fa-headset"></i> <span>HQ Support</span>
+                </a>
+
+                <a href="javascript:void(0)" class="nav-item logout-btn"
+                    style="margin-top: auto; padding: 20px; border-top: 1px solid var(--border);" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> <span>Sign Out</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MOBILE BOTTOM NAVIGATION -->
+        <nav class="mobile-bottom-nav">
+            <a href="javascript:void(0)" class="nav-item active" id="bnav-loads" onclick="showPage('loads')">
+                <i class="fas fa-route"></i>
+                <span>Loads</span>
+            </a>
+            <a href="javascript:void(0)" class="nav-item" id="bnav-active" onclick="showPage('active')">
+                <i class="fas fa-truck-moving"></i>
+                <span>Active</span>
+            </a>
+            <a href="javascript:void(0)" class="nav-item" id="bnav-messages" onclick="showPage('messages')">
+                <i class="fas fa-comments"></i>
+                <span>Chat</span>
+            </a>
+            <a href="javascript:void(0)" class="nav-item" id="bnav-earnings" onclick="showPage('earnings')">
+                <i class="fas fa-wallet"></i>
+                <span>Earnings</span>
+            </a>
+            <a href="javascript:void(0)" class="nav-item" id="bnav-settings" onclick="showPage('settings')">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- TOP HEADER -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h2 style="font-size: 1.2rem; color: var(--secondary);">Welcome, <span
+                            id="profileName">Driver</span></h2>
+                </div>
+
+                <div class="header-right" style="display: flex; align-items: center; gap: 20px;">
+                    <!-- Notification System -->
+                    <div class="notification-container" style="position: relative; cursor: pointer; margin-right: 5px;"
+                        onclick="toggleDriverNotifs(event)">
+                        <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: 0.3s;"
+                            onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                            <i class="fas fa-bell" style="font-size: 1.2rem; color: #64748b;"></i>
+                        </div>
+                        <span id="notif-count-badge"
+                            style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 0.7rem; font-weight: 900; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px; display: none; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);">0</span>
+
+                        <!-- Dropdown -->
+                        <div id="notif-dropdown"
+                            style="display: none; position: absolute; top: 100%; right: 0; width: 340px; background: white; border-radius: 20px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; z-index: 1100; margin-top: 15px; overflow: hidden; animation: slideDown 0.3s ease;">
+                            <div
+                                style="padding: 18px 20px; background: #f8fafc; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; color: #1e293b; font-size: 0.95rem;">Intelligence
+                                    Feed</span>
+                                <span
+                                    style="font-size: 0.75rem; color: var(--primary); font-weight: 800; cursor: pointer; background: #eff6ff; padding: 4px 10px; border-radius: 20px;"
+                                    onclick="markAllNotifsRead()">MARK ALL AS READ</span>
+                            </div>
+                            <div id="notif-items-list" style="max-height: 450px; overflow-y: auto; padding: 10px 0;">
+                                <div style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                                    <i class="fas fa-bell-slash"
+                                        style="font-size: 2.5rem; display: block; margin-bottom: 15px; opacity: 0.2;"></i>
+                                    <span style="font-size: 0.9rem; font-weight: 600;">System is quiet</span>
+                                    <p style="font-size: 0.75rem; margin-top: 5px;">No operational alerts at this moment
+                                    </p>
+                                </div>
+                            </div>
+                            <div
+                                style="padding: 12px; background: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;">
+                                <a href="javascript:void(0)"
+                                    style="font-size: 0.8rem; font-weight: 700; color: #64748b; text-decoration: none;">View
+                                    All Security Logs</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status-toggle"
+                        style="background: white; padding: 6px 15px; border-radius: 30px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+                        <span id="statusText"
+                            style="color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Offline</span>
+                        <label class="switch">
+                            <input type="checkbox" id="statusToggle" onchange="toggleStatus()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="user-identity-card"
+                        style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 6px 12px; border-radius: 40px; transition: background 0.2s;"
+                        onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'"
+                        onclick="showPage('settings'); loadSettings();">
+                        <div style="text-align: right; line-height: 1.1;">
+                            <div id="topbar-name"
+                                style="font-weight: 700; font-size: 0.95rem; color: var(--secondary); white-space: nowrap;">
+                                ...</div>
+                            <div
+                                style="font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Verified Partner</div>
+                        </div>
+                        <div
+                            style="width: 44px; height: 44px; border-radius: 50%; overflow: hidden; border: 2px solid #f1f5f9; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                            <img id="topbar-profile-pic" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                                style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- PAGE: LOADS -->
+            <section id="loads" class="page-content active">
+                <div style="margin-bottom: 30px;">
+                    <h2>Available Opportunities</h2>
+                    <p style="color: var(--text-muted);">Loads matched to your current location and capacity.</p>
+                </div>
+                <div id="load-list-container">
+                    <!-- Dynamic Loads Rendered Here via driver.js -->
+                    <div
+                        style="text-align: center; padding: 50px; background: white; border-radius: 20px; border: 1px dashed var(--border);">
+                        <i class="fas fa-search"
+                            style="font-size: 3rem; color: var(--border); margin-bottom: 15px;"></i>
+                        <p style="color: var(--text-muted); font-weight: 600;">Searching for matched loads in your
+                            radius...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: ACTIVE ROUTE -->
+            <section id="active" class="page-content">
+                <div style="margin-bottom: 30px;">
+                    <h2 style="font-size: 1.8rem; color: var(--secondary);">Mission Command</h2>
+                    <p style="color: var(--text-muted);">Real-time telemetry and navigation for your active load.</p>
+                </div>
+                <div id="no-active-job"
+                    style="display: none; padding: 60px; text-align: center; background: white; border-radius: 20px; border: 1px dashed var(--border);">
+                    <div
+                        style="width: 80px; height: 80px; background: #f0fdf4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #16a34a; font-size: 2rem;">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <h3 style="font-size: 1.5rem; color: var(--secondary);">All Assignments Complete</h3>
+                    <p style="color: var(--text-muted); max-width: 300px; margin: 10px auto;">You have no active routes.
+                        Browse the Loads tab to find your next high-payout opportunity.</p>
+                    <button class="btn-primary" style="width: auto; padding: 12px 30px; margin-top: 20px;"
+                        onclick="showPage('loads')">View Marketplace</button>
+                </div>
+                <div id="active-job-container" style="display: none;">
+                    <div class="job-card" style="margin-bottom: 25px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                            <div>
+                                <span
+                                    style="background: #eff6ff; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">In
+                                    Transit</span>
+                                <h3 id="active-job-id" style="font-size: 1.8rem; margin: 10px 0 5px;">#BK-000</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;"><i class="fas fa-clock"></i>
+                                    Estimated Delivery: <span style="color: var(--secondary); font-weight: 600;">2.5
+                                        Hours</span></p>
+                            </div>
+                            <div style="text-align: right;">
+                                <small style="color: var(--text-muted); display: block; margin-bottom: 5px;">Guaranteed
+                                    Payout</small>
+                                <div id="active-fare"
+                                    style="font-size: 1.8rem; font-weight: 800; color: var(--success);">PKR ...</div>
+                            </div>
+                        </div>
+
+                        <div class="active-job-container-grid"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding: 25px; background: #f8fafc; border-radius: 16px; margin-bottom: 25px; border: 1px solid #e2e8f0;">
+                            <div>
+                                <label
+                                    style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Origin
+                                    (Pickup)</label>
+                                <div id="active-pickup"
+                                    style="font-weight: 700; color: var(--secondary); font-size: 1.1rem; margin-top: 5px;">
+                                    ...</div>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Destination
+                                    (Drop-off)</label>
+                                <div id="active-dropoff"
+                                    style="font-weight: 700; color: var(--secondary); font-size: 1.1rem; margin-top: 5px;">
+                                    ...</div>
+                            </div>
+                        </div>
+
+                        <div class="mission-command-grid"
+                            style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px;">
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div
+                                    style="background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
+                                        <div style="position: relative;">
+                                            <img id="customer-pic"
+                                                src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                                                style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                            <div
+                                                style="position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; background: #16a34a; border-radius: 50%; border: 2px solid white;">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 id="customer-name" style="margin: 0; color: var(--secondary);">Customer
+                                                Name</h4>
+                                            <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                                                <i class="fas fa-star" style="color: #f59e0b; font-size: 0.75rem;"></i>
+                                                <span
+                                                    style="font-size: 0.8rem; font-weight: 700; color: var(--secondary);">4.9
+                                                    Verified Shipper</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                        <button class="btn"
+                                            style="background: var(--secondary); color: white; padding: 12px;"
+                                            onclick="alert('Connecting to encrypted line...')"><i
+                                                class="fas fa-phone"></i> Call</button>
+                                        <button class="btn"
+                                            style="background: white; border: 1px solid var(--border); padding: 12px;"
+                                            onclick="showPage('messages')"><i class="fas fa-comment"></i> Chat</button>
+                                    </div>
+                                    <div id="customer-phone-container" style="display:none;">
+                                        <span id="customer-phone"></span>
+                                    </div>
+                                    <button class="btn"
+                                        style="width: 100%; margin-top: 15px; background: #fff1f1; color: #ef4444; border: 1px solid #fee2e2; font-weight: 700; padding: 12px;"
+                                        onclick="alert('Emergency Alert Sent to HQ')">
+                                        <i class="fas fa-triangle-exclamation"></i> REPORT EMERGENCY
+                                    </button>
+                                </div>
+                                <button class="btn-primary"
+                                    style="width: 100%; background: #16a34a; padding: 18px; font-size: 1.1rem; border-radius: 12px; cursor: pointer;"
+                                    onclick="confirmDropOff(this)" id="completeBtn">
+                                    <i class="fas fa-check-circle"></i> CONFIRM DROP-OFF
+                                </button>
+
+                            </div>
+
+                            <div
+                                style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; height: 350px;">
+                                <div
+                                    style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: var(--secondary);"><i
+                                            class="fas fa-comments"></i> DISPATCH SECURE CHAT</span>
+                                    <span style="font-size: 0.7rem; color: #16a34a; font-weight: 800;">●
+                                        ENCRYPTED</span>
+                                </div>
+                                <div id="chat-messages"
+                                    style="flex: 1; padding: 20px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 12px;">
+                                </div>
+                                <div
+                                    style="padding: 15px; border-top: 1px solid #f1f5f9; background: white; display: flex; gap: 10px;">
+                                    <input type="text" id="chat-input" placeholder="Type message to shipper..."
+                                        style="flex: 1; margin: 0; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                                    <button class="btn-primary"
+                                        style="width: auto; padding: 0 20px; background: var(--secondary);"
+                                        onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="driver-map"></div>
+                </div>
+            </section>
+
+            <!-- PAGE: MESSAGES (PREMIUM PROFESSIONAL) -->
+            <section id="messages" class="page-content">
+                <div style="margin-bottom: 30px;">
+                    <h2 style="font-size: 1.8rem; color: var(--secondary);">Message Center</h2>
+                    <p style="color: var(--text-muted);">Coordinate logistics with your active and past shippers.</p>
+                </div>
+
+                <!-- Premium Messages Layout -->
+                <div class="messages-layout">
+                    <!-- Conversation List Sidebar -->
+                    <div class="conversation-list-container">
+                        <div class="conversation-list-header">
+                            <h3><i class="fas fa-comments"></i> Conversations</h3>
+                        </div>
+                        <div class="conversation-search-box">
+                            <input type="text" id="conversation-search" placeholder="Search conversations...">
+                        </div>
+                        <div id="conversation-list" style="flex: 1; overflow-y: auto; padding: 12px;"></div>
+                    </div>
+
+                    <!-- Chat Window -->
+                    <div id="chat-window" class="chat-window-area">
+                        <div id="no-chat-selected" class="empty-chat-state">
+                            <i class="fas fa-comment-dots"></i>
+                            <p>Select a conversation to start messaging</p>
+                        </div>
+                        <div id="active-chat-window" style="display: none; flex: 1; flex-direction: column;">
+                            <div class="chat-window-header">
+                                <div class="chat-window-header-avatar">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div class="chat-window-header-info">
+                                    <h4 id="chat-header-name">Customer</h4>
+                                    <p id="chat-header-id">#BK-000</p>
+                                </div>
+                                <div
+                                    style="width: 10px; height: 10px; background: var(--success); border-radius: 50%; margin-left: auto;">
+                                </div>
+                            </div>
+                            <div id="global-chat-messages" class="chat-messages-area"></div>
+                            <div class="chat-input-container">
+                                <input type="text" id="global-chat-input" placeholder="Type your secure message...">
+                                <button class="chat-send-btn" onclick="sendGlobalChatMessage()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: EARNINGS -->
+            <section id="earnings" class="page-content">
+                <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h2 style="font-size: 1.8rem; color: var(--secondary);">Profit Intelligence</h2>
+                        <p style="color: var(--text-muted);">Real-time tracking of revenue, overhead, and net
+                            profitability.</p>
+                    </div>
+                    <button class="btn"
+                        style="background: white; border: 1px solid var(--border); padding: 10px 20px; font-weight: 700; border-radius: 10px;"><i
+                            class="fas fa-file-invoice"></i> Export Financials</button>
+                </div>
+                <div class="earnings-summary-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 30px;">
+                    <div class="card"
+                        style="border-top: 4px solid var(--primary); background: linear-gradient(to bottom right, #eff6ff, white);">
+                        <small
+                            style="color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Wallet
+                            Balance</small>
+                        <h2 class="stat-card-value" style="font-size: 2.2rem; color: var(--secondary); margin: 10px 0;"
+                            id="earning-balance">PKR 0</h2>
+                        <div style="color: #16a34a; font-weight: 700; font-size: 0.9rem;" id="earning-growth"><i
+                                class="fas fa-chart-line"></i> +0.0% vs last period</div>
+                    </div>
+                    <div class="card"
+                        style="border-top: 4px solid var(--success); background: linear-gradient(to bottom right, #f0fdf4, white);">
+                        <small
+                            style="color: #16a34a; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Fleet
+                            Efficiency</small>
+                        <h2 class="stat-card-value" style="font-size: 2.2rem; color: var(--secondary); margin: 10px 0;"
+                            id="earning-efficiency">96.4%</h2>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;" id="earning-trips">0 Total Assignments
+                        </div>
+                    </div>
+                    <div class="card"
+                        style="border-top: 4px solid var(--warning); background: linear-gradient(to bottom right, #fffbeb, white);">
+                        <small
+                            style="color: #92400e; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Partner
+                            Rating</small>
+                        <h2 class="stat-card-value" style="font-size: 2.2rem; color: var(--secondary); margin: 10px 0;">
+                            4.8 <i class="fas fa-star" style="color: #f59e0b; font-size: 1.5rem;"></i></h2>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">Top 5% Tier Ranking</div>
+                    </div>
+                </div>
+                <div class="earnings-grid" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+                    <div class="card" style="margin: 0;">
+                        <h3 style="margin-bottom: 25px; font-size: 1.2rem;"><i class="fas fa-receipt"
+                                style="color: var(--primary);"></i> Profitability Ledger</h3>
+                        <div
+                            style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: var(--text-muted);">Weekly Net Earnings</span> <span
+                                style="font-weight: 800; color: var(--secondary);" id="earning-weekly">PKR 0</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: var(--text-muted);">Monthly Net Earnings</span> <span
+                                style="font-weight: 800; color: var(--secondary);" id="earning-monthly">PKR 0</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: var(--text-muted);">Yearly Net Earnings</span> <span
+                                style="font-weight: 800; color: var(--secondary);" id="earning-yearly">PKR 0</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; padding: 20px 0; border-bottom: none; background: #f8fafc; margin-top: 15px; border-radius: 12px; padding: 20px;">
+                            <span style="font-weight: 800; color: var(--secondary); font-size: 1.1rem;">Total Net
+                                Partner Earnings</span> <span
+                                style="color: var(--success); font-weight: 900; font-size: 1.5rem;"
+                                id="earning-net-ledger">PKR 0</span>
+                        </div>
+                    </div>
+                    <div class="card"
+                        style="background: var(--secondary); color: white; border: none; padding: 30px; position: relative; overflow: hidden; margin: 0;">
+                        <div style="position: absolute; bottom: -20px; right: -20px; font-size: 10rem; opacity: 0.05;">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3 style="margin-bottom: 15px; color: #60a5fa;"><i class="fas fa-brain"></i> AI Earnings
+                            Forecast</h3>
+                        <p style="font-size: 0.95rem; color: #94a3b8; margin-bottom: 30px; line-height: 1.6;">Based on
+                            historical route optimization and current market freight demand trends.</p>
+                        <div style="font-size: 3rem; font-weight: 900; color: white; margin-bottom: 5px;">PKR 185k</div>
+                        <div style="color: #60a5fa; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-chart-line"></i> 92% Confidence Score
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: DOCS -->
+            <section id="docs" class="page-content">
+                <div style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="font-size: 2.2rem; font-weight: 800; color: var(--secondary);">Trust Architecture
+                        </h2>
+                        <p style="color: var(--text-muted); font-size: 1.1rem;">Complete your professional lifecycle to
+                            unlock <b>Elite Tier</b> freight.</p>
+                    </div>
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; background: #fffbeb; padding: 10px 20px; border-radius: 40px; border: 1px solid #fef3c7; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.1);">
+                        <i class="fas fa-shield-halved" style="color: #fbbf24; font-size: 1.2rem;"></i>
+                        <span style="font-size: 0.95rem; font-weight: 800; color: #92400e;"
+                            id="partner-tier-status">Silver Partner</span>
+                    </div>
+                </div>
+
+                <!-- Trust Stepper -->
+                <div class="trust-stepper"
+                    style="display: flex; justify-content: space-between; margin-bottom: 60px; position: relative; padding: 0 50px;">
+                    <div class="trust-stepper-line"
+                        style="position: absolute; top: 25px; left: 100px; right: 100px; height: 3px; background: #f1f5f9; z-index: 0;">
+                        <div id="trust-progress-fill"
+                            style="height: 100%; background: var(--primary); width: 50%; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px var(--primary);">
+                        </div>
+                    </div>
+
+                    <div style="z-index: 1; text-align: center;">
+                        <div
+                            style="width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-weight: 800; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span style="font-size: 0.85rem; font-weight: 800; color: var(--secondary);">Identity</span>
+                    </div>
+                    <div style="z-index: 1; text-align: center;">
+                        <div
+                            style="width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-weight: 800; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span style="font-size: 0.85rem; font-weight: 800; color: var(--secondary);">Fleet Audit</span>
+                    </div>
+                    <div style="z-index: 1; text-align: center;">
+                        <div id="bio-step-node"
+                            style="width: 50px; height: 50px; background: white; color: #94a3b8; border: 2px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-weight: 800; transition: 0.3s;">
+                            3</div>
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #94a3b8;"
+                            id="bio-step-label">Biometrics</span>
+                    </div>
+                    <div style="z-index: 1; text-align: center;">
+                        <div id="cert-step-node"
+                            style="width: 50px; height: 50px; background: white; color: #94a3b8; border: 2px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-weight: 800; transition: 0.3s;">
+                            4</div>
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #94a3b8;" id="cert-step-label">Elite
+                            Badge</span>
+                    </div>
+                </div>
+
+                <div class="docs-grid" style="display: grid; grid-template-columns: 1fr 380px; gap: 30px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                        <!-- Doc 1: License -->
+                        <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px; transition: 0.3s;"
+                            onmouseover="this.style.transform='translateY(-5px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            <div
+                                style="padding: 20px; background: #f0fdf4; border-bottom: 1px solid #dcfce7; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; color: #166534; font-size: 0.9rem;"><i
+                                        class="fas fa-id-card"></i> COMMERCIAL LICENSE</span>
+                                <span id="license-badge"
+                                    style="background: #16a34a; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 900;">ACTIVE</span>
+                            </div>
+                            <div style="padding: 30px; text-align: center;">
+                                <!-- Hidden real file input -->
+                                <input type="file" id="file-input-license" accept="image/*,application/pdf"
+                                    style="display:none;" onchange="handleDocUpload(this, 'license')">
+                                <!-- Upload Drop Zone -->
+                                <div id="upload-zone-license"
+                                    style="width: 100%; height: 140px; background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;"
+                                    onclick="document.getElementById('file-input-license').click()"
+                                    ondragover="event.preventDefault(); this.style.borderColor='var(--primary)'; this.style.background='#eff6ff';"
+                                    ondragleave="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';"
+                                    ondrop="event.preventDefault(); handleDocUpload({files: event.dataTransfer.files}, 'license'); this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                                    <img id="preview-license" src=""
+                                        style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:14px;">
+                                    <div id="upload-zone-license-inner" style="text-align:center;">
+                                        <i class="fas fa-cloud-arrow-up"
+                                            style="font-size: 2rem; margin-bottom: 12px; color: var(--primary);"></i>
+                                        <span style="font-weight: 700; font-size: 0.9rem; display:block;">Click or Drag
+                                            to Upload</span>
+                                        <span style="font-size: 0.75rem; opacity: 0.7;">PDF, JPG or PNG (Max 5MB)</span>
+                                    </div>
+                                </div>
+                                <div id="scan-feedback-license"
+                                    style="margin-top: 15px; font-size: 0.8rem; font-weight: 800; color: #16a34a;">
+                                    <i class="fas fa-check-double"></i> OCR Extraction: Class A Heavy Verified
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Doc 2: Fitness -->
+                        <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px; transition: 0.3s;"
+                            onmouseover="this.style.transform='translateY(-5px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            <div
+                                style="padding: 20px; background: #f0fdf4; border-bottom: 1px solid #dcfce7; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; color: #166534; font-size: 0.9rem;"><i
+                                        class="fas fa-file-shield"></i> VEHICLE COMPLIANCE</span>
+                                <span id="fitness-badge"
+                                    style="background: #16a34a; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 900;">VALID</span>
+                            </div>
+                            <div style="padding: 30px; text-align: center;">
+                                <!-- Hidden real file input -->
+                                <input type="file" id="file-input-fitness" accept="image/*,application/pdf"
+                                    style="display:none;" onchange="handleDocUpload(this, 'fitness')">
+                                <!-- Upload Drop Zone -->
+                                <div id="upload-zone-fitness"
+                                    style="width: 100%; height: 140px; background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;"
+                                    onclick="document.getElementById('file-input-fitness').click()"
+                                    ondragover="event.preventDefault(); this.style.borderColor='var(--primary)'; this.style.background='#eff6ff';"
+                                    ondragleave="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';"
+                                    ondrop="event.preventDefault(); handleDocUpload({files: event.dataTransfer.files}, 'fitness'); this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                                    <img id="preview-fitness" src=""
+                                        style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:14px;">
+                                    <div id="upload-zone-fitness-inner" style="text-align:center;">
+                                        <i class="fas fa-truck-ramp-box"
+                                            style="font-size: 2rem; margin-bottom: 12px; color: var(--primary);"></i>
+                                        <span style="font-weight: 700; font-size: 0.9rem; display:block;">Click or Drag
+                                            to Upload</span>
+                                        <span style="font-size: 0.75rem; opacity: 0.7;">Annual Safety Audit Docs</span>
+                                    </div>
+                                </div>
+                                <div id="scan-feedback-fitness"
+                                    style="margin-top: 15px; font-size: 0.8rem; font-weight: 800; color: #16a34a;">
+                                    <i class="fas fa-check-double"></i> Telemetry Sync: Road Worthy Verified
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Biometric Full Card -->
+                        <div class="card"
+                            style="grid-column: span 2; padding: 45px; background: linear-gradient(135deg, #1e1b4b, #312e81); border: none; color: white; position: relative; overflow: hidden; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
+                            <div style="position: absolute; top: -30px; right: -30px; font-size: 18rem; opacity: 0.05;">
+                                <i class="fas fa-face-viewfinder"></i>
+                            </div>
+                            <div class="biometric-card-inner"
+                                style="position: relative; z-index: 1; display: flex; gap: 50px; align-items: center;">
+                                <div class="biometric-visual"
+                                    style="width: 260px; height: 260px; background: radial-gradient(circle at center, #1e1b4b, #000); border-radius: 24px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: inset 0 0 50px rgba(37, 99, 235, 0.2);"
+                                    id="bio-visual-container">
+                                    <video id="bio-webcam" autoplay playsinline muted
+                                        style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; z-index: 5; opacity: 0; transition: opacity 0.5s ease;"></video>
+                                    <canvas id="bio-snapshot" style="display: none;"></canvas>
+
+                                    <!-- HUD ELEMENTS -->
+                                    <div class="bio-hud-frame" id="bio-hud" style="display: none;">
+                                        <div class="bio-hud-corner corner-tl"></div>
+                                        <div class="bio-hud-corner corner-tr"></div>
+                                        <div class="bio-hud-corner corner-bl"></div>
+                                        <div class="bio-hud-corner corner-br"></div>
+                                        <!-- Removed background user icon and text to ensure real face visibility -->
+                                    </div>
+
+                                    <div id="bio-scanner-line" class="scanner-line"></div>
+
+                                    <!-- PROGRESS BAR HUD -->
+                                    <div id="bio-progress-hud"
+                                        style="display: none; position: absolute; bottom: 40px; left: 20px; right: 20px; z-index: 12;">
+                                        <div
+                                            style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                            <div id="bio-progress-bar"
+                                                style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease;">
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                                            <span
+                                                style="font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--primary-light); font-weight: 800;">SCANNING
+                                                IDENTITY...</span>
+                                            <span id="bio-progress-text"
+                                                style="font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--primary-light); font-weight: 800;">0%</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="bio-success-overlay" class="bio-success-overlay" style="display: none;">
+                                        <i class="fas fa-shield-check"></i>
+                                        <div
+                                            style="margin-top: 15px; color: white; font-weight: 900; letter-spacing: 2px;">
+                                            VERIFIED</div>
+                                    </div>
+
+                                    <div id="bio-placeholder"
+                                        style="text-align: center; color: white; transition: 0.5s; position: relative; z-index: 10;">
+                                        <div class="bio-pulse" id="bio-pulse"></div>
+                                        <div
+                                            style="width: 85px; height: 85px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; position: relative;">
+                                            <i class="fas fa-video-slash"
+                                                style="font-size: 2.2rem; color: rgba(255,255,255,0.4); transition: 0.3s;"
+                                                id="bio-status-icon"></i>
+                                            <div id="bio-init-spinner"
+                                                style="display: none; position: absolute; inset: -5px; border: 2px solid transparent; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;">
+                                            </div>
+                                        </div>
+                                        <h4 style="font-weight: 800; font-size: 1rem; margin: 0; letter-spacing: 2px; text-transform: uppercase; color: white;"
+                                            id="bio-status-text">Biometric Standby</h4>
+                                        <p style="font-size: 0.75rem; color: #64748b; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 1px;"
+                                            id="bio-status-subtext">CORE: READY • LINK: OFFLINE</p>
+                                    </div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div
+                                        style="display: inline-flex; align-items: center; gap: 8px; background: rgba(37, 99, 235, 0.2); color: #93c5fd; padding: 6px 15px; border-radius: 30px; font-size: 0.75rem; font-weight: 800; margin-bottom: 20px; border: 1px solid rgba(37, 99, 235, 0.3);">
+                                        <i class="fas fa-shield-halved"></i> SECURE LIVENESS ANALYSIS
+                                    </div>
+                                    <h2 style="font-size: 2.2rem; color: white; margin-bottom: 15px; font-weight: 900;">
+                                        Real-Face <span style="color: var(--primary-light);">Verification</span></h2>
+                                    <p
+                                        style="font-size: 1rem; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 30px; max-width: 450px;">
+                                        Our AI-driven biometric engine requires a real-time facial scan to authenticate
+                                        your
+                                        identity and unlock high-tier freight opportunities.
+                                    </p>
+                                    <button class="btn-primary"
+                                        style="width: auto; background: var(--grad-primary); padding: 20px 45px; border-radius: 16px; font-size: 1.1rem; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.4);"
+                                        id="bio-trigger-btn" onclick="startRealBiometricScan()">INITIALIZE REAL-FACE
+                                        SCAN</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Side Intelligence -->
+                    <div style="display: flex; flex-direction: column; gap: 30px;">
+                        <div class="card" style="margin: 0; padding: 40px; text-align: center; border-radius: 24px;">
+                            <h3 style="font-size: 1.2rem; color: var(--secondary); margin-bottom: 30px;">Partner Trust
+                                Velocity</h3>
+                            <div style="position: relative; width: 220px; height: 220px; margin: 0 auto;">
+                                <svg style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                                    <defs>
+                                        <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+                                        </linearGradient>
+                                        <filter id="glow">
+                                            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                            <feMerge>
+                                                <feMergeNode in="coloredBlur" />
+                                                <feMergeNode in="SourceGraphic" />
+                                            </feMerge>
+                                        </filter>
+                                    </defs>
+                                    <circle cx="110" cy="110" r="100" fill="transparent" stroke="#f1f5f9"
+                                        stroke-width="16"></circle>
+                                    <circle id="trust-gauge-fill" cx="110" cy="110" r="100" fill="transparent"
+                                        stroke="url(#gaugeGradient)" stroke-width="16" stroke-dasharray="628"
+                                        stroke-dashoffset="157"
+                                        style="transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); filter: url(#glow);">
+                                    </circle>
+                                </svg>
+                                <div
+                                    style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <div id="trust-score-display"
+                                        style="font-size: 3.5rem; font-weight: 900; color: var(--secondary); line-height: 1;">
+                                        850</div>
+                                    <div
+                                        style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-top: 5px;">
+                                        Trust Rating</div>
+                                </div>
+                            </div>
+                            <div
+                                style="margin-top: 30px; padding: 18px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <p style="font-size: 0.9rem; color: var(--primary); font-weight: 800; margin: 0;">
+                                    <i class="fas fa-bolt"></i> +150 Points to Elite Tier
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="card"
+                            style="margin: 0; padding: 30px; border-radius: 24px; background: #0f172a; color: white; border: none;">
+                            <h3 style="font-size: 1.1rem; color: #94a3b8; margin-bottom: 20px;">Enterprise Eligibility
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 10px;">
+                                    <span style="font-size: 0.9rem; color: #cbd5e1;">Government Loads</span>
+                                    <i class="fas fa-circle-check" style="color: #10b981;"></i>
+                                </div>
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 10px;">
+                                    <span style="font-size: 0.9rem; color: #cbd5e1;">Cold Chain Heavy</span>
+                                    <i class="fas fa-circle-check" style="color: #10b981;"></i>
+                                </div>
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 10px; opacity: 0.5;">
+                                    <span style="font-size: 0.9rem; color: #64748b;">International Transit</span>
+                                    <i class="fas fa-lock" style="color: #475569;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VERIFIED GOLDEN CARD (Hidden by default) -->
+                    <div id="verification-success-zone"
+                        style="grid-column: 1 / -1; display: none; margin-top: 60px; animation: slideUp 0.8s ease-out;">
+                        <div
+                            style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 60px 20px; border-radius: 40px; border: 1px solid #334155; position: relative; overflow: hidden; text-align: center;">
+                            <div
+                                style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(to right, #f59e0b, #fbbf24, #f59e0b);">
+                            </div>
+
+                            <!-- The Golden Card (High-Fidelity) -->
+                            <div id="golden-id-card"
+                                style="width: 100%; max-width: 440px; height: 260px; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #b45309 100%); border-radius: 28px; margin: 0 auto; padding: 35px; text-align: left; position: relative; box-shadow: 0 40px 80px -15px rgba(217, 119, 6, 0.6); color: white; border: 1px solid rgba(255,255,255,0.4); transition: 0.5s; overflow: hidden;">
+                                <!-- Official Trust Seal -->
+                                <div
+                                    style="position: absolute; top: -20px; left: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);">
+                                </div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; position: relative; z-index: 1;">
+                                    <div style="display: flex; gap: 20px; align-items: center;">
+                                        <div
+                                            style="width: 85px; height: 85px; border-radius: 20px; border: 4px solid white; overflow: hidden; background: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
+                                            <img id="card-pic"
+                                                src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 900; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-bottom: 4px;"
+                                                id="card-name">DRIVER NAME</div>
+                                            <div style="font-size: 0.85rem; font-weight: 800; opacity: 0.95; text-transform: uppercase; letter-spacing: 1.5px; background: rgba(0,0,0,0.1); padding: 3px 10px; border-radius: 6px; display: inline-block;"
+                                                id="card-vehicle">V-0000 • TRUCK</div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <i class="fas fa-shield-check"
+                                            style="font-size: 2.2rem; color: rgba(255,255,255,0.95); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));"></i>
+                                        <div
+                                            style="font-size: 0.6rem; font-weight: 900; margin-top: 5px; letter-spacing: 1px;">
+                                            SECURED BY AI</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 25px; position: relative; z-index: 1;">
+                                    <div style="display: flex; gap: 30px; align-items: flex-end;">
+                                        <div>
+                                            <div
+                                                style="font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; margin-bottom: 6px;">
+                                                CREDENTIAL ID</div>
+                                            <div
+                                                style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 1rem; color: white;">
+                                                ST-VER-8829-PX</div>
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <span
+                                                    style="background: white; color: #b45309; padding: 8px 20px; border-radius: 40px; font-size: 0.85rem; font-weight: 900; box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px;">
+                                                    <i class="fas fa-crown"></i> ELITE VERIFIED PARTNER
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    style="position: absolute; bottom: 35px; right: 35px; display: flex; flex-direction: column; align-items: center; z-index: 1;">
+                                    <div
+                                        style="background: white; padding: 8px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);">
+                                        <i class="fas fa-qrcode" style="color: black; font-size: 3.5rem;"></i>
+                                    </div>
+                                    <small
+                                        style="font-size: 0.6rem; font-weight: 900; margin-top: 10px; opacity: 1; letter-spacing: 1.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">AUTHENTICATED
+                                        HUB</small>
+                                </div>
+
+                                <!-- Premium Gloss Accents -->
+                                <div
+                                    style="position: absolute; bottom: -50px; left: -50px; width: 160px; height: 160px; background: rgba(255,255,255,0.15); border-radius: 50%; filter: blur(30px);">
+                                </div>
+                                <div
+                                    style="position: absolute; top: 0; right: 0; width: 200px; height: 200px; background: linear-gradient(to bottom left, rgba(255,255,255,0.1) 0%, transparent 70%);">
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 55px;">
+                                <h2
+                                    style="color: white; font-size: 2.2rem; font-weight: 900; margin-bottom: 15px; letter-spacing: -0.5px;">
+                                    Elite Credentials Deployed</h2>
+                                <p
+                                    style="color: #94a3b8; font-size: 1.15rem; margin-bottom: 40px; max-width: 550px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                    You have successfully achieved <b>Tier 1 Verification</b>. This digital credential
+                                    serves as your official authorization for high-value logistics operations across the
+                                    Smart Truck network.</p>
+
+                                <div style="display: flex; justify-content: center; gap: 25px; flex-wrap: wrap;">
+                                    <button class="btn-primary"
+                                        style="width: auto; padding: 20px 50px; background: #f59e0b; box-shadow: 0 20px 40px -10px rgba(245, 158, 11, 0.5); font-size: 1.1rem; font-weight: 800; border: none; border-radius: 20px; transition: 0.3s; cursor: pointer;"
+                                        onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 25px 50px -10px rgba(245, 158, 11, 0.6)';"
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 20px 40px -10px rgba(245, 158, 11, 0.5)';"
+                                        onclick="downloadGoldenCard()">
+                                        <i class="fas fa-download"></i> DOWNLOAD GOLDEN CARD
+                                    </button>
+                                    <button class="btn"
+                                        style="width: auto; padding: 20px 50px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); font-size: 1rem; font-weight: 700; border-radius: 20px; backdrop-filter: blur(10px);"
+                                        onclick="alert('Digital ID link copied to clipboard!')">
+                                        <i class="fas fa-share-nodes"></i> SHARE CREDENTIALS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: HQ SUPPORT (ADMIN CHAT) -->
+            <section id="hq" class="page-content">
+                <div style="margin-bottom: 30px;">
+                    <h2 style="font-size: 1.8rem; color: var(--secondary);">HQ Direct Support</h2>
+                    <p style="color: var(--text-muted);">Emergency communication channel with Smart Truck Command
+                        Center.</p>
+                </div>
+
+                <div class="card"
+                    style="max-width: 800px; margin: 0 auto; height: 600px; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+                    <div
+                        style="padding: 20px; background: var(--secondary); color: white; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div
+                                style="width: 12px; height: 12px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981;">
+                            </div>
+                            <h4 style="margin: 0;">Command Center Online</h4>
+                        </div>
+                        <span style="font-size: 0.75rem; font-weight: 800; opacity: 0.8;">SECURED LINE: ST-HQ-99</span>
+                    </div>
+
+                    <div id="hq-chat-box"
+                        style="flex: 1; padding: 25px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 15px;">
+                        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-headset" style="font-size: 3rem; opacity: 0.2; margin-bottom: 15px;"></i>
+                            <p>Establishing secure connection to Dispatch HQ...</p>
+                        </div>
+                    </div>
+
+                    <div
+                        style="padding: 20px; border-top: 1px solid var(--border); background: white; display: flex; gap: 15px;">
+                        <button class="btn" id="hq-emergency-btn"
+                            style="background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; width: auto; padding: 0 15px;"
+                            onclick="sendHQMessage('EMERGENCY: Assistance Required!')">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </button>
+                        <input type="text" id="hq-input" placeholder="Describe your emergency or request..."
+                            style="flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 12px;"
+                            onkeyup="if(event.key==='Enter') sendHQMessage()">
+                        <button class="btn-primary" id="hq-send-btn"
+                            style="width: auto; padding: 0 25px; background: var(--secondary);"
+                            onclick="sendHQMessage()">
+                            <i class="fas fa-paper-plane" id="hq-send-icon"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: SETTINGS -->
+            <section id="settings" class="page-content">
+
+                <div style="margin-bottom: 30px;">
+                    <h2 style="font-size: 1.8rem; color: var(--secondary);">Enterprise Settings</h2>
+                    <p style="color: var(--text-muted);">Manage your professional profile and fleet performance.</p>
+                </div>
+
+                <div class="settings-nav">
+                    <div class="s-tab active" onclick="switchSettingsTab('profile', this)"><i
+                            class="fas fa-id-badge"></i> Public Profile</div>
+                    <div class="s-tab" onclick="switchSettingsTab('fleet', this)"><i class="fas fa-truck-ramp-box"></i>
+                        Fleet Specs</div>
+                    <div class="s-tab" onclick="switchSettingsTab('security', this)"><i
+                            class="fas fa-shield-halved"></i> Security</div>
+                    <div class="s-tab" onclick="switchSettingsTab('theme', this)"><i class="fas fa-palette"></i> Theme &
+                        App</div>
+                </div>
+
+                <!-- Tab: Profile -->
+                <div id="s-pane-profile" class="settings-pane active">
+                    <div class="settings-card" style="grid-column: span 2;">
+                        <div class="settings-card-header"><i class="fas fa-user-circle"></i> Personal Identity</div>
+                        <div class="settings-card-body">
+                            <div class="profile-identity-grid">
+                                <div class="profile-avatar-wrapper" style="position: relative; display: inline-block;">
+                                    <img id="profile-pic-preview"
+                                        src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                                        style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 4px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                                    <button class="btn-primary"
+                                        style="position: absolute; bottom: 5px; right: 5px; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;"
+                                        onclick="document.getElementById('profile-upload').click()"><i
+                                            class="fas fa-camera"></i></button>
+                                    <input type="file" id="profile-upload" hidden onchange="uploadProfilePic(this)">
+                                </div>
+                                <div class="grid-cols-2-responsive">
+                                    <div>
+                                        <label>Full Name</label>
+                                        <input type="text" id="profile-name" value="" placeholder="Loading..."
+                                            class="premium-input">
+                                    </div>
+                                    <div>
+                                        <label>Phone Number</label>
+                                        <input type="text" id="profile-phone" value="" placeholder="Loading..."
+                                            class="premium-input">
+                                    </div>
+                                    <div style="grid-column: span 2;">
+                                        <label>Professional Bio</label>
+                                        <textarea id="profile-bio" rows="4" class="premium-input"
+                                            placeholder="Loading profile bio..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Fleet -->
+                <div id="s-pane-fleet" class="settings-pane">
+                    <div class="settings-card">
+                        <div class="settings-card-header"><i class="fas fa-truck"></i> Vehicle Details</div>
+                        <div class="settings-card-body">
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div>
+                                    <label>Registration Number</label>
+                                    <input type="text" id="profile-vehicle-num" value="" placeholder="e.g. LEC-0000"
+                                        class="premium-input">
+                                </div>
+                                <div>
+                                    <label>Vehicle Category</label>
+                                    <select id="profile-vehicle-type" class="premium-input">
+                                        <option value="Mini Truck">Mini Truck</option>
+                                        <option value="Standard Truck">Standard Truck</option>
+                                        <option value="Heavy Trailer">Heavy Trailer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Max Service Radius (km)</label>
+                                    <input type="number" id="setting-max-distance" value="100" class="premium-input"
+                                        placeholder="Distance in KM">
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8fafc; border-radius: 12px;">
+                                    <div>
+                                        <h4 style="margin: 0;">Auto-Accept Loads</h4>
+                                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Automatically
+                                            confirm
+                                            matching jobs</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="setting-auto-accept">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Security -->
+                <div id="s-pane-security" class="settings-pane">
+                    <div class="settings-card">
+                        <div class="settings-card-header"><i class="fas fa-lock"></i> Account Security</div>
+                        <div class="settings-card-body">
+                            <button class="btn"
+                                style="width: 100%; text-align: left; padding: 15px; margin-bottom: 20px;">
+                                <i class="fas fa-key"></i> Update Account Password
+                            </button>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="margin: 0;">Two-Factor Auth</h4>
+                                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">SMS verification
+                                        for
+                                        logins</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Theme -->
+                <div id="s-pane-theme" class="settings-pane">
+                    <div class="grid-cols-2-responsive">
+                        <div class="settings-card">
+                            <div class="settings-card-header"><i class="fas fa-palette"></i> Appearance Preferences
+                            </div>
+                            <div class="settings-card-body">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-hover); border-radius: 12px;">
+                                    <div>
+                                        <h4 style="margin: 0;">Portal Dark Mode</h4>
+                                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                                            High-contrast theme
+                                            for night driving</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" onchange="document.body.classList.toggle('dark-mode')">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-top: 15px; background: var(--bg-hover); border-radius: 12px;">
+                                    <div>
+                                        <h4 style="margin: 0;">Auto-Accept Match</h4>
+                                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Instantly
+                                            book 90%+
+                                            score loads</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="setting-auto-accept-toggle"
+                                            onchange="toggleAutoAccept()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="settings-card-header"><i class="fas fa-satellite-dish"></i> Dispatch Radius
+                            </div>
+                            <div class="settings-card-body">
+                                <div style="margin-top: 10px;">
+                                    <label>Matching Range (50km - 1000km)</label>
+                                    <input type="range" id="setting-max-distance-range" min="50" max="1000" value="150"
+                                        style="width: 100%; margin-top: 20px; accent-color: var(--primary);">
+                                    <div
+                                        style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-top: 10px; font-weight: 700;">
+                                        <span>50 KM</span>
+                                        <span id="range-val" style="color: var(--primary);">150 KM</span>
+                                        <span>1000 KM</span>
+                                    </div>
+                                </div>
+                                <p
+                                    style="font-size: 0.8rem; color: var(--text-muted); margin-top: 25px; background: #f0f9ff; padding: 12px; border-radius: 10px; border: 1px solid #e0f2fe;">
+                                    <i class="fas fa-info-circle" style="color: var(--primary);"></i> Your profile will
+                                    be
+                                    prioritized for loads within this radius.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="danger-zone">
+                    <h3 style="color: #991b1b; margin-bottom: 10px; font-weight: 800;">CRITICAL: TERMINATION PROTOCOL
+                    </h3>
+                    <p style="color: #b91c1c; font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">
+                        Deleting your account will permanently remove your earnings history, fleet verification, and
+                        verified partner status. This action cannot be undone.
+                    </p>
+                    <button class="danger-btn" onclick="terminateAccount()">
+                        <i class="fas fa-user-slash"></i> Terminate Partner Account
+                    </button>
+                </div>
+
+                <div style="margin-top: 40px; display: flex; justify-content: flex-end; gap: 15px;">
+                    <button class="btn-primary" style="width: auto; padding: 15px 40px;" onclick="saveAllSettings()">
+                        <i class="fas fa-save"></i> DEPLOY ALL UPDATES
+                    </button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='driver.js') }}"></script>
+    <script>
+        // --- VERIFICATION & TRUST LOGIC ---
+
+        // --- DRIVER DASHBOARD LANGUAGE TOGGLE (English/اردو only) ---
+        (function () {
+            const URDU_KEY = 'ur';
+            const LS_KEY = 'smart_truck_driver_lang';
+
+            const dict = {
+                en: {
+                    'nav-loads': 'Available Loads',
+                    'nav-active': 'Active Route',
+                    'nav-messages': 'Messages',
+                    'nav-earnings': 'Earnings',
+                    'nav-docs': 'Verification',
+                    'nav-settings': 'Settings',
+                    'nav-hq': 'HQ Support',
+                    'nav-logout': 'Sign Out',
+
+                    'top-title': 'Welcome,',
+                    'top-status': 'Offline',
+
+                    'loads-title': 'Available Opportunities',
+                    'loads-subtitle': 'Loads matched to your current location and capacity.',
+
+                    'active-title': 'Mission Command',
+                    'active-subtitle': 'Real-time telemetry and navigation for your active load.',
+                    'active-complete-title': 'All Assignments Complete',
+                    'active-complete-desc': 'You have no active routes. Browse the Loads tab to find your next high-payout opportunity.',
+                    'active-view-market': 'View Marketplace',
+
+                    'active-in-transit': 'In Transit',
+                    'active-guaranteed-payout': 'Guaranteed Payout',
+                    'active-origin': 'Origin (Pickup)',
+                    'active-destination': 'Destination (Drop-off)',
+
+                    'active-customer-call': 'Call',
+                    'active-customer-chat': 'Chat',
+                    'active-emergency': 'REPORT EMERGENCY',
+                    'active-confirm-dropoff': 'CONFIRM DROP-OFF',
+
+                    'dispatch-secure-chat': 'DISPATCH SECURE CHAT',
+                    'encrypted-badge': 'ENCRYPTED',
+                    'chat-input-placeholder': 'Type message to shipper...',
+
+                    'messages-title': 'Message Center',
+                    'messages-subtitle': 'Coordinate logistics with your active and past shippers.',
+                    'conversations': 'Conversations',
+                    'search-conversations': 'Search conversations...',
+                    'select-conversation': 'Select a conversation to start messaging',
+                    'chat-header-name': 'Customer',
+                    'chat-input-placeholder-global': 'Type your secure message...',
+
+                    'earnings-title': 'Profit Intelligence',
+                    'earnings-subtitle': 'Real-time tracking of revenue, overhead, and net profitability.',
+                    'export-financials': 'Export Financials',
+                    'wallet-balance': 'Wallet Balance',
+                    'fleet-efficiency': 'Fleet Efficiency',
+                    'partner-rating': 'Partner Rating',
+                    'top-tier-ranking': 'Top 5% Tier Ranking',
+
+                    'profit-ledger': 'Profitability Ledger',
+                    'weekly-net': 'Weekly Net Earnings',
+                    'monthly-net': 'Monthly Net Earnings',
+                    'yearly-net': 'Yearly Net Earnings',
+                    'total-net-ledger': 'Total Net Partner Earnings',
+
+                    'ai-earnings-forecast': 'AI Earnings Forecast',
+                    'ai-earnings-subtitle': 'Based on historical route optimization and current market freight demand trends.',
+                    'docs-title': 'Trust Architecture',
+                    'docs-subtitle': 'Complete your professional lifecycle to unlock Elite Tier freight.',
+                    'partner-tier-status': 'Silver Partner',
+
+                    'hq-title': 'HQ Direct Support',
+                    'hq-subtitle': 'Emergency communication channel with Smart Truck Command Center.',
+                    'hq-connecting': 'Establishing secure connection to Dispatch HQ...',
+                    'hq-monitoring': 'HQ Command Center is monitoring your status. Send a message to start a session.',
+                    'hq-input-placeholder': 'Describe your emergency or request...'
+                },
+                [URDU_KEY]: {
+                    'nav-loads': 'دستیاب بوجھ',
+                    'nav-active': 'ایکٹو روٹ',
+                    'nav-messages': 'پیغامات',
+                    'nav-earnings': 'کمائی',
+                    'nav-docs': 'ویریفیکیشن',
+                    'nav-settings': 'سیٹنگز',
+                    'nav-hq': 'ایچ کیو سپورٹ',
+                    'nav-logout': 'سائن آؤٹ',
+
+                    'top-title': 'خوش آمدید,',
+                    'top-status': 'آف لائن',
+
+                    'loads-title': 'دستیاب مواقع',
+                    'loads-subtitle': 'آپ کی موجودہ لوکیشن اور کیپیسٹی کے مطابق بوجھ میچ کیے گئے ہیں۔',
+
+                    'active-title': 'مشین کمانڈ',
+                    'active-subtitle': 'آپ کے ایکٹو بوجھ کیلئے ریئل ٹائم ٹیلی میٹری اور نیویگیشن۔',
+                    'active-complete-title': 'تمام اسائنمنٹس مکمل',
+                    'active-complete-desc': 'آپ کے پاس کوئی ایکٹو روٹس نہیں ہیں۔ اگلے ہائی پی آؤٹ موقع کیلئے لوڈز ٹیب دیکھیں۔',
+                    'active-view-market': 'مارکیٹ پلیس دیکھیں',
+
+                    'active-in-transit': 'سفر جاری',
+                    'active-guaranteed-payout': 'گارنٹیڈ ادائیگی',
+                    'active-origin': 'ابتدا (پک اپ)',
+                    'active-destination': 'منزل (ڈراپ آف)',
+
+                    'active-customer-call': 'کال',
+                    'active-customer-chat': 'چیٹ',
+                    'active-emergency': 'ایمرجنسی رپورٹ کریں',
+                    'active-confirm-dropoff': 'ڈراپ آف کنفرم کریں',
+
+                    'dispatch-secure-chat': 'ڈسپیچ سکیور چیٹ',
+                    'encrypted-badge': 'انکرپٹڈ',
+                    'chat-input-placeholder': 'شیپر کو میسج لکھیں...',
+
+                    'messages-title': 'میسج سینٹر',
+                    'messages-subtitle': 'اپنے ایکٹو اور پرانے شیپرز کے ساتھ لاجسٹکس کو ہم آہنگ کریں۔',
+                    'conversations': 'گفتگو',
+                    'search-conversations': 'گفتگو تلاش کریں...',
+                    'select-conversation': 'میسجنگ شروع کرنے کیلئے گفتگو منتخب کریں',
+                    'chat-header-name': 'کسٹمر',
+                    'chat-input-placeholder-global': 'اپنا محفوظ میسج لکھیں...',
+
+                    'earnings-title': 'پرافٹ انٹیلیجنس',
+                    'earnings-subtitle': 'ریونیو، اوورہیڈ اور نیٹ منافع کی ریئل ٹائم ٹریکنگ۔',
+                    'export-financials': 'فنانشل ایکسپورٹ',
+                    'wallet-balance': 'والیٹ بیلنس',
+                    'fleet-efficiency': 'فلیٹ ایفیشینسی',
+                    'partner-rating': 'پارٹنر ریٹنگ',
+                    'top-tier-ranking': 'ٹاپ 5٪ ٹئیر رینکنگ',
+
+                    'profit-ledger': 'منفعت کا ریکارڈ',
+                    'weekly-net': 'ہفتہ وار نیٹ کمائی',
+                    'monthly-net': 'ماہانہ نیٹ کمائی',
+                    'yearly-net': 'سالانہ نیٹ کمائی',
+                    'total-net-ledger': 'کل نیٹ پارٹنر کمائی',
+
+                    'ai-earnings-forecast': 'AI کمائی کی پیشگوئی',
+                    'ai-earnings-subtitle': 'پچھلی روٹ آپٹیمائزیشن اور موجودہ مارکیٹ فریٹ ڈیمانڈ پر مبنی۔',
+                    'docs-title': 'ٹرسٹ آرکیٹیکچر',
+                    'docs-subtitle': 'اپنے پروفیشنل لائف سائیکل کو مکمل کریں اور Elite Tier فریٹ کھولیں۔',
+                    'partner-tier-status': 'سلور پارٹنر',
+
+                    'hq-title': 'ایچ کیو ڈائریکٹ سپورٹ',
+                    'hq-subtitle': 'سمارٹ ٹرک کمانڈ سینٹر کے ساتھ ایمرجنسی کمیونیکیشن چینل۔',
+                    'hq-connecting': 'ڈسپیچ ایچ کیو سے محفوظ کنیکشن قائم کیا جا رہا ہے...',
+                    'hq-monitoring': 'ایچ کیو کمانڈ سینٹر آپ کی اسٹیٹس مانیٹر کر رہا ہے۔ سیشن شروع کرنے کیلئے میسج کریں۔',
+                    'hq-input-placeholder': 'اپنی ایمرجنسی یا درخواست بیان کریں...'
+                }
+            };
+
+            function applyLang(lang) {
+                const isUrdu = lang === URDU_KEY;
+                document.documentElement.lang = isUrdu ? 'ur' : 'en';
+                document.documentElement.dir = isUrdu ? 'rtl' : 'ltr';
+
+                const d = dict[isUrdu ? URDU_KEY : 'en'];
+
+                const setText = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el && val !== undefined) el.textContent = val;
+                };
+
+                // Sidebar nav labels (we only add IDs for key elements via query)
+                // These are mapped by textContent replacement using query selectors.
+                // If an element doesn't exist, we ignore.
+                const map = [
+                    ['nav-loads', 'nav-loads'],
+                    ['nav-active', 'nav-active'],
+                    ['nav-messages', 'nav-messages'],
+                    ['nav-earnings', 'nav-earnings'],
+                    ['nav-docs', 'nav-docs'],
+                    ['nav-settings', 'nav-settings'],
+                    ['nav-hq', 'nav-hq']
+                ];
+                // Update span within each nav item (keep icons)
+                map.forEach(([key, id]) => {
+                    const nav = document.getElementById(id);
+                    if (!nav) return;
+                    const span = nav.querySelector('span');
+                    if (span && d[key]) span.textContent = d[key];
+                });
+
+                // Logout text
+                const logoutAnchor = document.querySelector('.logout-btn span');
+                if (logoutAnchor && d['nav-logout']) logoutAnchor.textContent = d['nav-logout'];
+
+                setText('statusText', d['top-status'] || 'Offline');
+
+                const loadsTitle = document.querySelector('#loads > div > h2');
+                const loadsSub = document.querySelector('#loads > div > p');
+                if (loadsTitle && d['loads-title']) loadsTitle.textContent = d['loads-title'];
+                if (loadsSub && d['loads-subtitle']) loadsSub.textContent = d['loads-subtitle'];
+
+                const activeTitle = document.querySelector('#active > div > h2');
+                const activeSub = document.querySelector('#active > div > p');
+                if (activeTitle && d['active-title']) activeTitle.textContent = d['active-title'];
+                if (activeSub && d['active-subtitle']) activeSub.textContent = d['active-subtitle'];
+
+                const completeH3 = document.querySelector('#no-active-job h3');
+                const completeP = document.querySelector('#no-active-job p');
+                const viewMarketBtn = document.querySelector('#no-active-job button');
+                if (completeH3 && d['active-complete-title']) completeH3.textContent = d['active-complete-title'];
+                if (completeP && d['active-complete-desc']) completeP.textContent = d['active-complete-desc'];
+                if (viewMarketBtn && d['active-view-market']) viewMarketBtn.innerHTML = `<i class="fas fa-route"></i> ${d['active-view-market']}`;
+
+                // Active job labels/buttons/placeholders
+                const inTransitBadge = document.querySelector('#active-job-container span[style*="In"]') || null;
+                const completeBtn = document.getElementById('completeBtn');
+                if (completeBtn && d['active-confirm-dropoff']) completeBtn.lastChild && (completeBtn.lastChild.textContent = d['active-confirm-dropoff']);
+                if (completeBtn && d['active-confirm-dropoff']) {
+                    // safer: rewrite full button text while keeping icon
+                    completeBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${d['active-confirm-dropoff']}`;
+                }
+
+                const originLabel = document.querySelector('#active-job-container [style*="Origin"]');
+                const destLabel = document.querySelector('#active-job-container [style*="Destination"]');
+                if (originLabel && d['active-origin']) originLabel.textContent = d['active-origin'];
+                if (destLabel && d['active-destination']) destLabel.textContent = d['active-destination'];
+
+                const callBtn = document.querySelector('#active-job-container button[onclick*="alert(']');
+                // Not reliably selectable; use generic text replacements where possible.
+
+                const reportBtn = document.querySelector('#active-job-container button[onclick*="Emergency"]');
+                if (reportBtn && d['active-emergency']) {
+                    reportBtn.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${d['active-emergency']}`;
+                }
+
+                // Mission command grid text
+                const dispatchSecure = Array.from(document.querySelectorAll('#active .mission-command-grid span, #active .mission-command-grid div span'))
+                    .find(x => x.textContent.trim() === 'DISPATCH SECURE CHAT' || x.textContent.trim() === 'DISPATCH SECURE CHAT');
+                const encryptedBadge = Array.from(document.querySelectorAll('#active .mission-command-grid span'))
+                    .find(x => x.textContent.trim() === 'ENCRYPTED');
+                const dispatchHeader = document.querySelector('#active .mission-command-grid span');
+
+                // Chat placeholders
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput && d['chat-input-placeholder']) chatInput.setAttribute('placeholder', d['chat-input-placeholder']);
+
+                // Messages page
+                const msgTitle = document.querySelector('#messages > div > h2');
+                const msgSub = document.querySelector('#messages > div > p');
+                if (msgTitle && d['messages-title']) msgTitle.textContent = d['messages-title'];
+                if (msgSub && d['messages-subtitle']) msgSub.textContent = d['messages-subtitle'];
+
+                const convHeader = document.querySelector('#messages .conversation-list-header h3');
+                if (convHeader && d['conversations']) {
+                    convHeader.innerHTML = `<i class="fas fa-comments"></i> ${d['conversations']}`;
+                }
+
+                const convSearch = document.getElementById('conversation-search');
+                if (convSearch && d['search-conversations']) convSearch.setAttribute('placeholder', d['search-conversations']);
+
+                const noChatSelected = document.getElementById('no-chat-selected');
+                const noChatP = noChatSelected ? noChatSelected.querySelector('p') : null;
+                if (noChatP && d['select-conversation']) noChatP.textContent = d['select-conversation'];
+
+                const chatHeaderName = document.getElementById('chat-header-name');
+                if (chatHeaderName && d['chat-header-name']) chatHeaderName.textContent = d['chat-header-name'];
+
+                const globalChatInput = document.getElementById('global-chat-input');
+                if (globalChatInput && d['chat-input-placeholder-global']) globalChatInput.setAttribute('placeholder', d['chat-input-placeholder-global']);
+
+                // Docs page tier default
+                const tier = document.getElementById('partner-tier-status');
+                if (tier && d['partner-tier-status']) tier.textContent = d['partner-tier-status'];
+
+                // HQ page
+                const hqTitle = document.querySelector('#hq > div > h2');
+                const hqSub = document.querySelector('#hq > div > p');
+                if (hqTitle && d['hq-title']) hqTitle.textContent = d['hq-title'];
+                if (hqSub && d['hq-subtitle']) hqSub.textContent = d['hq-subtitle'];
+
+                const hqInput = document.getElementById('hq-input');
+                if (hqInput && d['hq-input-placeholder']) hqInput.setAttribute('placeholder', d['hq-input-placeholder']);
+
+                // Update top language button styles
+                const enBtn = document.getElementById('lang-en-btn');
+                const urBtn = document.getElementById('lang-ur-btn');
+                if (enBtn && urBtn) {
+                    enBtn.style.color = isUrdu ? '#64748b' : 'var(--primary)';
+                    urBtn.style.color = isUrdu ? '#2563eb' : '#64748b';
+                }
+            }
+
+            function init() {
+                const saved = localStorage.getItem(LS_KEY);
+                const lang = saved === URDU_KEY ? URDU_KEY : 'en';
+
+                // Show toggle
+                const wrap = document.querySelector('.lang-toggle-wrap');
+                if (wrap) wrap.style.display = 'block';
+
+                const enBtn = document.getElementById('lang-en-btn');
+                const urBtn = document.getElementById('lang-ur-btn');
+                if (enBtn) enBtn.onclick = () => { localStorage.setItem(LS_KEY, 'en'); applyLang('en'); };
+                if (urBtn) urBtn.onclick = () => { localStorage.setItem(LS_KEY, URDU_KEY); applyLang(URDU_KEY); };
+
+                applyLang(lang);
+            }
+
+            init();
+        })();
+
+
+
+
+        let trustScore = 850;
+
+        function showPage(pageId) {
+            // Mobile Sidebar Auto-Close
+            if (window.innerWidth <= 1024) {
+                toggleSidebar(false);
+            }
+
+            const allPages = document.querySelectorAll('.page-content');
+            allPages.forEach(p => p.classList.remove('active'));
+
+            const target = document.getElementById(pageId);
+            if (target) target.classList.add('active');
+
+            const allNav = document.querySelectorAll('.nav-item');
+            allNav.forEach(n => n.classList.remove('active'));
+
+            const activeNav = document.getElementById(`nav-${pageId}`);
+            if (activeNav) activeNav.classList.add('active');
+
+            const activeBNav = document.getElementById(`bnav-${pageId}`);
+            if (activeBNav) activeBNav.classList.add('active');
+
+            // --- Sync Data with driver.js logic ---
+            if (pageId === 'loads') loadMarketplace();
+            if (pageId === 'active') loadActiveJob();
+            if (pageId === 'messages') loadAllChats();
+            if (pageId === 'earnings') fetchEarningsData();
+            if (pageId === 'settings') loadSettings();
+            if (pageId === 'docs') loadSettings(); // Re-sync verification state
+
+            window.scrollTo(0, 0);
+        }
+
+        function toggleSidebar(state = null) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && overlay) {
+                if (state === null) {
+                    sidebar.classList.toggle('active');
+                    overlay.classList.toggle('active');
+                } else {
+                    if (state) {
+                        sidebar.classList.add('active');
+                        overlay.classList.add('active');
+                    } else {
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        function simulateAIDocScan(docType) {
+            const feedback = document.getElementById(`scan-feedback-${docType.toLowerCase()}`);
+            feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> AI Scanning & Extracting Data...`;
+            feedback.style.color = "var(--primary)";
+
+            setTimeout(() => {
+                feedback.innerHTML = `<i class="fas fa-check-double"></i> ${docType} Verified & AI-Audited`;
+                feedback.style.color = "#16a34a";
+                updateTrustScore(25);
+            }, 3000);
+        }
+
+        async function startRealBiometricScan() {
+            const btn = document.getElementById('bio-trigger-btn');
+            const video = document.getElementById('bio-webcam');
+            const placeholder = document.getElementById('bio-placeholder');
+            const container = document.getElementById('bio-visual-container');
+            const successOverlay = document.getElementById('bio-success-overlay');
+            const scannerLine = document.getElementById('bio-scanner-line');
+            const hud = document.getElementById('bio-hud');
+            const statusText = document.getElementById('bio-status-text');
+            const statusSubtext = document.getElementById('bio-status-subtext');
+            const statusIcon = document.getElementById('bio-status-icon');
+
+            // Robust check for browser capabilities
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast("System incompatibility: Camera access requires HTTPS and modern browser security protocols.", "error");
+                return;
+            }
+
+            // Update UI to "Initializing" state
+            btn.disabled = true;
+            btn.style.opacity = "0.7";
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> INITIALIZING AI CORE...`;
+
+            statusText.innerText = "INITIALIZING CORE...";
+            statusText.style.color = "var(--primary-light)";
+            statusSubtext.innerText = "LINK: ESTABLISHING SECURE CONNECTION";
+            statusIcon.className = "fas fa-sync fa-spin";
+            statusIcon.style.opacity = "0.8";
+            statusIcon.style.color = "var(--primary-light)";
+
+            const spinner = document.getElementById('bio-init-spinner');
+            if (spinner) spinner.style.display = 'block';
+
+            try {
+                // Try with specific constraints first
+                let stream;
+                const constraints = [
+                    { video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } },
+                    { video: { width: { ideal: 640 }, height: { ideal: 480 } } },
+                    { video: true }
+                ];
+
+                for (let constraint of constraints) {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia(constraint);
+                        if (stream) break;
+                    } catch (e) {
+                        console.warn("Constraint failed, trying next...", constraint);
+                    }
+                }
+
+                if (!stream) throw new Error("No usable camera found or permission denied.");
+
+                // Assign stream to video element
+                video.muted = true;
+                video.setAttribute('playsinline', true);
+                video.srcObject = stream;
+
+                // Robust Playback Logic
+                const startPlayback = async () => {
+                    try {
+                        if (video.srcObject !== stream) video.srcObject = stream;
+
+                        // Force a slight delay to ensure stream is ready
+                        await new Promise(r => setTimeout(r, 100));
+
+                        await video.play();
+
+                        // Aggressive UI Sync
+                        video.style.display = 'block';
+                        setTimeout(() => video.style.opacity = '1', 50);
+
+                        placeholder.style.display = 'none';
+                        placeholder.style.visibility = 'hidden';
+                        placeholder.style.pointerEvents = 'none';
+
+                        scannerLine.style.display = 'block';
+                        hud.style.display = 'block';
+                        container.classList.add('active');
+
+                        statusSubtext.innerText = "LINK: ENCRYPTED • ONLINE";
+                        statusText.innerText = "BIOMETRIC FEED ACTIVE";
+                        statusText.style.color = "var(--success)";
+
+                        btn.disabled = false;
+                        btn.style.opacity = "1";
+                        btn.innerHTML = `<i class="fas fa-face-viewfinder"></i> CAPTURE & ANALYZE`;
+                        btn.style.background = "var(--grad-primary)";
+                        btn.onclick = () => captureFacialData(stream);
+
+                        showToast("Secure Biometric Link Established.", "success");
+                    } catch (playErr) {
+                        console.error("Playback failed:", playErr);
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fas fa-redo"></i> RETRY INITIALIZATION`;
+                    }
+                };
+
+                video.onloadedmetadata = startPlayback;
+
+                // Trigger playback if already loaded or fallback
+                if (video.readyState >= 2) {
+                    startPlayback();
+                } else {
+                    // Safety timeout for playback
+                    setTimeout(() => {
+                        if (video.paused && stream.active) startPlayback();
+                    }, 1000);
+                }
+
+            } catch (err) {
+                console.error("Biometric initialization failure:", err);
+                btn.disabled = false;
+                btn.innerHTML = `INITIALIZE REAL-FACE SCAN`;
+                statusText.innerText = "ACCESS DENIED";
+                statusSubtext.innerText = "LINK: FAILED";
+                statusIcon.className = "fas fa-exclamation-triangle";
+                statusIcon.style.color = "var(--danger)";
+
+                let errorMsg = "Camera access was denied. Please check site permissions.";
+                if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMsg = "No camera hardware detected on this device.";
+                } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMsg = "Camera permission denied. Please allow access in browser settings.";
+                }
+
+                alert(`Security Protocol Error: ${errorMsg}`);
+            }
+        }
+
+        async function captureFacialData(stream) {
+            const btn = document.getElementById('bio-trigger-btn');
+            const video = document.getElementById('bio-webcam');
+            const canvas = document.getElementById('bio-snapshot');
+            const line = document.getElementById('bio-scanner-line');
+            const container = document.getElementById('bio-visual-container');
+            const hud = document.getElementById('bio-hud');
+
+            // --- Stage 1: Capture Frame ---
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-camera fa-spin"></i> CAPTURING FRAME...`;
+            line.style.display = "block";
+            line.style.animation = "bioScannerMove 0.8s infinite alternate ease-in-out";
+
+            // Prepare canvas
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+
+            // Mirror the capture to match the mirrored video preview
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            const imageData = canvas.toDataURL('image/jpeg', 0.85);
+
+            // Stop stream and hide video cleanly
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            video.style.display = 'none';
+            video.style.opacity = '0';
+
+            // Show snapshot — absolute fill to match video positioning
+            canvas.style.display = 'block';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.objectFit = 'cover';
+            canvas.style.borderRadius = '16px';
+            canvas.style.zIndex = '6';
+            canvas.style.transform = 'scaleX(-1)';
+
+            // --- Stage 2 & 3: Simulated AI & API Call ---
+            await new Promise(r => setTimeout(r, 800));
+            btn.innerHTML = `<i class="fas fa-brain fa-spin"></i> RUNNING LIVENESS AI...`;
+
+            await new Promise(r => setTimeout(r, 1200));
+            btn.innerHTML = `<i class="fas fa-shield-halved fa-spin"></i> ENCRYPTING & STORING...`;
+
+            try {
+                const driverId = localStorage.getItem('smart_truck_driver_id') || 1;
+
+                const res = await fetch(`/api/driver/biometrics/${driverId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                if (!res.ok) throw new Error("Server connection error.");
+
+                // --- SUCCESS UI ---
+                line.style.display = 'none';
+                if (hud) hud.style.display = 'none';
+                container.style.border = '4px solid #10b981';
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:rgba(16,185,129,0.15); border-radius:16px; padding:20px; text-align:center; position:relative; z-index:7;">
+                        <div style="width:60px;height:60px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 20px rgba(16,185,129,0.5);">
+                            <i class="fas fa-check" style="color:white;font-size:1.5rem;"></i>
+                        </div>
+                        <div style="color:#10b981;font-weight:900;font-size:0.9rem;letter-spacing:1px;">IDENTITY VERIFIED</div>
+                        <div style="color:rgba(255,255,255,0.6);font-size:0.7rem;margin-top:6px;">Liveness Confirmed</div>
+                    </div>`;
+
+                btn.disabled = false;
+                btn.style.background = '#10b981';
+                btn.innerHTML = `<i class="fas fa-circle-check"></i> VERIFICATION COMPLETE`;
+
+            } catch (err) {
+                console.error("Biometric Error:", err);
+                line.style.display = 'none';
+                if (hud) hud.style.display = 'none';
+                btn.disabled = false;
+                btn.style.background = '#ef4444';
+                btn.innerHTML = `<i class="fas fa-rotate-right"></i> RETRY SCAN`;
+                btn.onclick = () => startRealBiometricScan();
+            }
+        }
+
+        function updateTrustScore(points) {
+            trustScore = Math.min(1000, trustScore + points);
+            document.getElementById('trust-score-display').innerText = trustScore;
+
+            // Update Gauge SVG (628 is full circumference)
+            const offset = 628 - (trustScore / 1000 * 628);
+            document.getElementById('trust-gauge-fill').style.strokeDashoffset = offset;
+        }
+
+
+        async function saveAllSettings() {
+            if (typeof saveSettings === 'function') {
+                await saveSettings();
+            } else {
+                alert("Security Protocol: Updates deployed to the enterprise cloud.");
+            }
+        }
+
+        async function terminateAccount() {
+            const driverId = localStorage.getItem('smart_truck_driver_id');
+            if (!driverId) return;
+
+            const confirmed = confirm("SECURITY ALERT: Are you absolutely sure you want to terminate your Partner Account? This operation is IRREVERSIBLE and will wipe all your enterprise data.");
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/driver/terminate/${driverId}`, {
+                    method: 'POST'
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert(result.message);
+                    localStorage.clear();
+                    location.reload();
+                } else {
+                    alert("Security Protocol: " + result.message);
+                }
+            } catch (e) {
+                console.error("Termination error:", e);
+                alert("Operation Failed: Secure connection lost.");
+            }
+        }
+        async function loadHQChat() {
+            const savedId = localStorage.getItem('smart_truck_driver_id');
+            const driverId = parseInt(savedId);
+            if (!driverId || isNaN(driverId)) return;
+
+            const chatBox = document.getElementById('hq-chat-box');
+
+            try {
+                const res = await fetch(`/api/emergency/messages/${driverId}`);
+                if (!res.ok) return;
+                const msgs = await res.json();
+
+                chatBox.innerHTML = '';
+                if (msgs.length === 0) {
+                    chatBox.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-headset" style="font-size: 3rem; opacity: 0.1; margin-bottom: 15px;"></i>
+                            <p>Establishing secure connection to Dispatch HQ...</p>
+                            <p style="font-size: 0.8rem; margin-top: 10px;">HQ Command Center is monitoring your status. Send a message to start a session.</p>
+                        </div>`;
+                } else {
+                    msgs.forEach(m => {
+                        const isMe = m.sender_type === 'driver';
+                        const msgDiv = document.createElement('div');
+                        msgDiv.style.alignSelf = isMe ? 'flex-end' : 'flex-start';
+                        msgDiv.style.maxWidth = '80%';
+                        msgDiv.style.padding = '12px 18px';
+                        msgDiv.style.borderRadius = '20px';
+                        if (isMe) {
+                            msgDiv.style.borderBottomRightRadius = '4px';
+                            msgDiv.style.background = 'var(--secondary)';
+                            msgDiv.style.color = 'white';
+                        } else {
+                            msgDiv.style.borderBottomLeftRadius = '4px';
+                            msgDiv.style.background = 'white';
+                            msgDiv.style.color = 'var(--secondary)';
+                            msgDiv.style.border = '1px solid var(--border)';
+                        }
+                        msgDiv.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.05)';
+
+                        msgDiv.innerHTML = `
+                            <div style="font-size: 0.95rem; line-height: 1.5; font-weight: 500;">${m.message}</div>
+                            <div style="font-size: 0.7rem; opacity: 0.6; text-align: right; margin-top: 6px; font-weight: 700;">${m.time}</div>
+                        `;
+                        chatBox.appendChild(msgDiv);
+                    });
+                }
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (e) {
+                console.error("HQ Sync Error:", e);
+            }
+        }
+
+        async function sendHQMessage(text = null) {
+            const savedId = localStorage.getItem('smart_truck_driver_id');
+            const driverId = parseInt(savedId);
+
+            if (!driverId || isNaN(driverId)) {
+                alert("Session Expired: Please login again to use HQ Support.");
+                return;
+            }
+
+            const input = document.getElementById('hq-input');
+            const btn = document.getElementById('hq-send-btn');
+            const icon = document.getElementById('hq-send-icon');
+            const emergencyBtn = document.getElementById('hq-emergency-btn');
+            const message = text || input.value;
+
+            if (!message.trim()) return;
+
+            // UI Loading State
+            const originalIcon = icon.className;
+            icon.className = 'fas fa-spinner fa-spin';
+            btn.disabled = true;
+            if (emergencyBtn) emergencyBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/emergency/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        driver_id: driverId,
+                        sender_type: 'driver',
+                        message: message,
+                        is_emergency: !!text
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (!text) input.value = '';
+                    loadHQChat();
+                    if (text) {
+                        alert("EMERGENCY ALERT BROADCASTED: HQ Command Center has been notified.");
+                    }
+                } else {
+                    alert("HQ Error: " + (result.message || "Unable to dispatch message"));
+                }
+            } catch (e) {
+                console.error("HQ Sync Error:", e);
+                alert("HQ Connection Interrupted: Please check your internet connectivity.");
+            } finally {
+                icon.className = originalIcon;
+                btn.disabled = false;
+                if (emergencyBtn) emergencyBtn.disabled = false;
+            }
+        }
+
+        // Auto-refresh chat when on HQ page
+        setInterval(() => {
+            const hqPage = document.getElementById('hq');
+            if (hqPage && hqPage.classList.contains('active')) {
+                loadHQChat();
+            }
+        }, 5000);
+
+        /* ─── LANGUAGE TOGGLE LOGIC ─── */
+        const translations = {
+            en: {
+                loads: "Available Loads", active: "Active Route", messages: "Messages", earnings: "Earnings",
+                verification: "Verification", settings: "Settings", hq: "HQ Support", signout: "Sign Out",
+                welcome: "Welcome,", offline: "Offline", online: "Online", verified: "Verified Partner",
+                opportunities: "Available Opportunities", opp_desc: "Loads matched to your current location and capacity.",
+                mission: "Mission Command", mission_desc: "Real-time telemetry and navigation for your active load.",
+                all_done: "All Assignments Complete", marketplace: "View Marketplace", profit: "Profit Intelligence",
+                profit_desc: "Real-time tracking of revenue, overhead, and net profitability.", trust: "Trust Architecture",
+                trust_desc: "Complete your professional lifecycle to unlock Elite Tier freight.", hq_direct: "HQ Direct Support",
+                hq_desc: "Emergency communication channel with Smart Truck Command Center.", searching: "Searching for matched loads in your radius...",
+                wallet: "Wallet Balance", efficiency: "Fleet Efficiency", rating: "Partner Rating",
+                weekly: "Weekly Net Earnings", monthly: "Monthly Net Earnings", yearly: "Yearly Net Earnings", total_net: "Total Net Partner Earnings"
+            },
+            ur: {
+                loads: "دستیاب لوڈز", active: "فعال راستہ", messages: "پیغامات", earnings: "آمدنی",
+                verification: "تصدیق", settings: "ترتیبات", hq: "ایچ کیو سپورٹ", signout: "سائن آؤٹ",
+                welcome: "خوش آمدید،", offline: "آف لائن", online: "آن لائن", verified: "تصدیق شدہ پارٹنر",
+                opportunities: "دستیاب مواقع", opp_desc: "آپ کے موجودہ مقام اور گنجائش کے مطابق لوڈز۔",
+                mission: "مشن کمانڈ", mission_desc: "آپ کے فعال لوڈ کے لیے ریئل ٹائم ٹیلی میٹری اور نیویگیشن۔",
+                all_done: "تمام اسائنمنٹس مکمل", marketplace: "مارکیٹ پلیس دیکھیں", profit: "منافع کی معلومات",
+                profit_desc: "آمدنی، اخراجات اور خالص منافع کا ریئل ٹائم ٹریکنگ۔", trust: "ٹرسٹ آرکیٹیکچر",
+                trust_desc: "ایلیٹ ٹیئر فریٹ کو غیر مقفل کرنے کے لیے اپنا پیشہ ورانہ لائف سائیکل مکمل کریں۔", hq_direct: "ایچ کیو براہ راست سپورٹ",
+                hq_desc: "اسمارٹ ٹرک کمانڈ سینٹر کے ساتھ ہنگامی مواصلاتی چینل۔", searching: "آپ کے رداس میں مماثل لوڈز تلاش کر رہے ہیں...",
+                wallet: "والیٹ بیلنس", efficiency: "بیڑے کی کارکردگی", rating: "پارٹنر ریٹنگ",
+                weekly: "ہفتہ وار خالص آمدنی", monthly: "ماہانہ خالص آمدنی", yearly: "سالانہ خالص آمدنی", total_net: "کل خالص پارٹنر آمدنی"
+            }
+        };
+
+        function setLanguage(lang) {
+            const t = translations[lang];
+            if (!t) return;
+
+            try {
+                // Sidebar & Mobile Nav
+                ['loads', 'active', 'messages', 'earnings', 'docs', 'settings', 'hq'].forEach(id => {
+                    const el = document.querySelector(`#nav-${id} span`);
+                    if (el) el.innerText = t[id === 'docs' ? 'verification' : id];
+
+                    const bel = document.querySelector(`#bnav-${id} span`);
+                    if (bel) {
+                        const bkey = id === 'messages' ? 'messages' : (id === 'docs' ? 'verification' : id);
+                        bel.innerText = t[bkey].split(' ')[0]; // Use shorter text for mobile nav
+                    }
+                });
+                const logoutSpan = document.querySelector('.logout-btn span');
+                if (logoutSpan) logoutSpan.innerText = t.signout;
+
+                // Header
+                const welcomeH2 = document.querySelector('.header-left h2');
+                if (welcomeH2 && welcomeH2.childNodes[0]) welcomeH2.childNodes[0].textContent = t.welcome + ' ';
+                const statusText = document.getElementById('statusText');
+                if (statusText) statusText.innerText = document.getElementById('statusToggle').checked ? t.online : t.offline;
+                const partnerSpan = document.querySelector('.user-identity-card div div:last-child');
+                if (partnerSpan) partnerSpan.innerText = t.verified;
+
+                // Page Titles & Descriptions
+                const pageIds = ['loads', 'active', 'earnings', 'docs', 'hq'];
+                pageIds.forEach(id => {
+                    const sec = document.getElementById(id);
+                    if (sec) {
+                        const h2 = sec.querySelector('h2');
+                        const p = sec.querySelector('p');
+                        const keys = { 'loads': 'opportunities', 'active': 'mission', 'earnings': 'profit', 'docs': 'trust', 'hq': 'hq_direct' };
+                        const descKeys = { 'loads': 'opp_desc', 'active': 'mission_desc', 'earnings': 'profit_desc', 'docs': 'trust_desc', 'hq': 'hq_desc' };
+                        if (h2) h2.innerText = t[keys[id]];
+                        if (p) p.innerText = t[descKeys[id]];
+                    }
+                });
+
+                // Earnings Cards & Ledger
+                const earningsLabels = {
+                    'earning-balance': t.wallet,
+                    'earning-efficiency': t.efficiency
+                };
+                // Find small tags above the values
+                document.querySelectorAll('#earnings .card small').forEach(el => {
+                    const text = el.innerText.toUpperCase();
+                    if (text.includes('WALLET')) el.innerText = t.wallet;
+                    if (text.includes('FLEET')) el.innerText = t.efficiency;
+                    if (text.includes('PARTNER')) el.innerText = t.rating;
+                });
+                document.querySelectorAll('#earnings .card span').forEach(el => {
+                    const text = el.innerText;
+                    if (text.includes('Weekly')) el.innerText = t.weekly;
+                    if (text.includes('Monthly')) el.innerText = t.monthly;
+                    if (text.includes('Yearly')) el.innerText = t.yearly;
+                    if (text.includes('Total Net')) el.innerText = t.total_net;
+                });
+
+                // Miscellaneous
+                const searchP = document.querySelector('#load-list-container p');
+                if (searchP) searchP.innerText = t.searching;
+                const marketH3 = document.querySelector('#no-active-job h3');
+                if (marketH3) marketH3.innerText = t.all_done;
+                const marketBtn = document.querySelector('#no-active-job button');
+                if (marketBtn) marketBtn.innerText = t.marketplace;
+
+                // UI Button State
+                document.getElementById('lang-en-btn').style.color = lang === 'en' ? 'var(--primary)' : '#64748b';
+                document.getElementById('lang-ur-btn').style.color = lang === 'ur' ? 'var(--primary)' : '#64748b';
+
+                // RTL Handling
+                document.documentElement.dir = lang === 'ur' ? 'rtl' : 'ltr';
+                document.body.classList.toggle('rtl-mode', lang === 'ur');
+
+                localStorage.setItem('driver_lang', lang);
+            } catch (err) {
+                console.error("Language Sync Error:", err);
+            }
+        }
+
+        // Direct event assignment for maximum reliability
+        document.getElementById('lang-en-btn').onclick = () => setLanguage('en');
+        document.getElementById('lang-ur-btn').onclick = () => setLanguage('ur');
+
+        // Immediate Init
+        const currentLang = localStorage.getItem('driver_lang') || 'en';
+        setLanguage(currentLang);
+        // Backup init to ensure dynamic elements are caught
+        window.addEventListener('load', () => setLanguage(localStorage.getItem('driver_lang') || 'en'));
+    </script>
+</body>
+
+</html>
